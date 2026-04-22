@@ -1,15 +1,36 @@
 function square(id, x, y, state)
-    x = x * offset
-    y = y * offset
+    local offsetX = x * offset
+    local offsetY = y * offset
 
-    love.graphics.print(id, x + 10, y + 10)
-    love.graphics.rectangle("fill", 0 + x, 0 + y, 100, 5)
-    love.graphics.rectangle("fill", 100 + x, 0 + y, 5, 100)
-    love.graphics.rectangle("fill", 0 + x, 0 + y, 5, 100)
-    love.graphics.rectangle("fill", 0 + x, 100 + y, 100, 5)
+    local mouseX, mouseY = love.mouse.getPosition()
 
-    local centerX = x + (offset / 2)
-    local centerY = y + (offset / 2)
+    if (winner == 0) then
+        if (mouseX > offsetX and mouseX < 100 + offsetX and mouseY > offsetY and mouseY < 100 + offsetY) then
+            love.graphics.setColor(0, 1, 0)
+            function love.mousepressed(x, y, button, istouch)
+                if (button == 1) then
+                    if (grid[id] == 0) then
+                        if (firstTurn) then
+                            grid[id] = 1
+                        else
+                            grid[id] = 2
+                        end
+                        firstTurn = not firstTurn
+                    end
+                end
+            end
+        else
+            love.graphics.setColor(1, 1, 1)
+        end
+    end
+
+    love.graphics.rectangle("fill", offsetX, offsetY, 100, 5)
+    love.graphics.rectangle("fill", 100 + offsetX, offsetY, 5, 100)
+    love.graphics.rectangle("fill", offsetX, offsetY, 5, 100)
+    love.graphics.rectangle("fill", offsetX, 100 + offsetY, 100, 5)
+
+    local centerX = offsetX + (offset / 2)
+    local centerY = offsetY + (offset / 2)
 
     if (state == 1) then
         drawX(centerX, centerY)
@@ -56,17 +77,31 @@ function checkWinningCondition(i)
         winner = i
     elseif (i == grid[3] and i == grid[5] and i == grid[7]) then
         winner = i
-    else
-        return 0
+    end
+
+    if (winner ~= 0) then
+        score[i] = score[i] + 1
     end
 end
 
+function checkZero()
+    for i = 1, #grid do
+        if (grid[i] == 0) then
+            return false
+        end
+    end
+    return true
+end
+
 function love.load()
+    love.window.setTitle("Tic-Tac-Toe")
+
     winner = 0
     grid = {}
     offset = 100
+
+    score = {0, 0}
     firstTurn = true
-    love.window.setTitle("Tic-Tac-Toe")
     for i = 1, 3 do
         for j = 1, 3 do
             table.insert(grid, 0)
@@ -75,10 +110,30 @@ function love.load()
 end
 
 function love.draw()
+    love.graphics.setColor(1, 1, 1)
+    local screenWidth = love.graphics.getWidth()
+    love.graphics.print(score[1], 10, 10)
+    love.graphics.print(score[2], screenWidth - 10, 10)
+
     if (firstTurn) then
-        love.graphics.print("Player 1's turn", 10, 10)
+        love.graphics.print("Player 1's turn", screenWidth / 4, 10)
     else
-        love.graphics.print("Player 2's turn", 10, 10)
+        love.graphics.print("Player 2's turn", 2 * screenWidth / 3, 10)
+    end
+
+    if (winner > 0 or checkZero()) then
+        local centerX = love.graphics.getWidth() / 2
+        local centerY = love.graphics.getHeight() / 2
+        if (winner ~= 0) then
+            love.graphics.print("Player " .. winner .. "wins!", centerX + 100, centerY)
+        else
+            love.graphics.print("No one wins!", centerX + 100, centerY)
+        end
+        love.graphics.print("Press \"r\" to restart", centerX + 100, centerY + 20)
+        if (love.keyboard.isDown("r")) then
+            grid = {0, 0, 0, 0, 0, 0, 0, 0, 0}
+            winner = 0
+        end
     end
 
     id = 1
@@ -88,28 +143,12 @@ function love.draw()
             id = id + 1
         end
     end
-
-    if (winner > 0) then
-        local centerX = love.graphics.getWidth() / 2
-        local centerY = love.graphics.getHeight() / 2
-        love.graphics.print("Player " .. winner .. "wins!", centerX + 100, centerY)
-        love.graphics.print("Press \"r\" to restart", centerX + 100, centerY + 10)
-        if (love.keyboard.isDown("r")) then
-            grid = {0, 0, 0, 0, 0, 0, 0, 0, 0}
-            winner = 0
-        end
-    end
 end
 
 function love.update()
-    for i = 1, 2 do
-        checkWinningCondition(i)
-    end
     if (winner == 0) then
-        for i = 1, #grid do
-            if (love.keyboard.isDown(tostring(i))) then
-                updateGrid(i)
-            end
+        for i = 1, 2 do
+            checkWinningCondition(i)
         end
     end
 end
